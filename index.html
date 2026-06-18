@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a1f14" />
+<title>Match Day Quiz — World Cup 2026</title>
+<meta property="og:title" content="Match Day Quiz — World Cup 2026" />
+<meta property="og:description" content="Test how closely you watched. New quiz after every match day." />
+<meta property="og:type" content="website" />
+<style>
+  :root{
+    --bg:#07150d; --bg2:#0d2418; --card:#102e1d; --card2:#13422a;
+    --line:rgba(255,255,255,.08); --txt:#eafff2; --mut:#8fb6a0;
+    --grn:#1fd873; --grn2:#0fa85a; --gold:#ffd23f; --red:#ff5470; --blu:#39b8ff;
+    --shadow:0 18px 50px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 700px at 50% -10%,#16432b 0%,var(--bg2) 45%,var(--bg) 100%);
+    color:var(--txt); min-height:100vh; min-height:100dvh;
+    display:flex; justify-content:center; align-items:flex-start;
+    overflow-x:hidden;
+  }
+  #app{width:100%; max-width:480px; min-height:100vh; min-height:100dvh; padding:18px 16px 28px; position:relative}
+  .screen{display:none; animation:fade .35s ease both}
+  .screen.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes pop{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+
+  /* header */
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .ball{width:34px;height:34px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#cfe9d8 60%,#9ec7ad);
+    position:relative;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  .ball:before{content:"";position:absolute;inset:0;border-radius:50%;
+    background:
+      radial-gradient(7px 7px at 50% 46%,#0c2a1a 38%,transparent 42%),
+      radial-gradient(5px 5px at 24% 30%,#0c2a1a 40%,transparent 44%),
+      radial-gradient(5px 5px at 76% 30%,#0c2a1a 40%,transparent 44%),
+      radial-gradient(5px 5px at 28% 74%,#0c2a1a 40%,transparent 44%),
+      radial-gradient(5px 5px at 72% 74%,#0c2a1a 40%,transparent 44%)}
+  .brand b{font-size:18px;letter-spacing:.3px}
+  .brand span{color:var(--mut);font-size:12px;display:block;margin-top:1px}
+
+  .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);
+    border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+    background:rgba(31,216,115,.14);color:var(--grn);padding:6px 12px;border-radius:999px;
+    border:1px solid rgba(31,216,115,.25)}
+  h1{font-size:30px;line-height:1.08;margin:14px 0 6px;letter-spacing:-.5px}
+  .sub{color:var(--mut);font-size:14px;line-height:1.45;margin:0 0 20px}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;
+    transition:transform .12s ease,filter .12s ease;font-family:inherit}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:linear-gradient(180deg,var(--grn),var(--grn2));color:#04150b;
+    box-shadow:0 10px 24px rgba(31,216,115,.35)}
+  .btn-ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid var(--line)}
+  .btn-gold{background:linear-gradient(180deg,#ffe27a,var(--gold));color:#3a2a00;
+    box-shadow:0 10px 24px rgba(255,210,63,.3)}
+  .btn.sm{padding:12px;font-size:14px;border-radius:12px}
+
+  .stats{display:flex;gap:10px;margin:18px 0 0}
+  .stat{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;
+    padding:12px;text-align:center}
+  .stat b{display:block;font-size:22px}
+  .stat span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
+  .streak b{color:var(--gold)}
+
+  .archive{margin-top:16px;text-align:center}
+  .archive a{color:var(--mut);font-size:13px;text-decoration:none;border-bottom:1px dotted var(--mut)}
+
+  /* quiz */
+  .qtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .qcount{font-size:13px;color:var(--mut);font-weight:700}
+  .combo{font-size:13px;font-weight:800;color:var(--gold);opacity:0;transform:scale(.8);transition:.2s}
+  .combo.on{opacity:1;transform:scale(1)}
+  .timebar{height:8px;border-radius:8px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:18px}
+  .timefill{height:100%;width:100%;background:linear-gradient(90deg,var(--grn),var(--gold));
+    border-radius:8px;transition:width .1s linear}
+  .qtext{font-size:21px;font-weight:800;line-height:1.25;margin:6px 0 18px;min-height:84px}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{background:rgba(255,255,255,.05);border:1.5px solid var(--line);border-radius:14px;
+    padding:15px 16px;font-size:15px;font-weight:600;color:var(--txt);text-align:left;cursor:pointer;
+    transition:.15s;display:flex;align-items:center;gap:12px;font-family:inherit}
+  .opt:active{transform:scale(.99)}
+  .opt .k{width:26px;height:26px;flex:none;border-radius:8px;background:rgba(255,255,255,.08);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--mut)}
+  .opt.correct{background:rgba(31,216,115,.18);border-color:var(--grn);color:#fff}
+  .opt.correct .k{background:var(--grn);color:#04150b}
+  .opt.wrong{background:rgba(255,84,112,.16);border-color:var(--red)}
+  .opt.wrong .k{background:var(--red);color:#fff}
+  .opt.dim{opacity:.45}
+  .explain{margin-top:16px;background:rgba(255,255,255,.04);border:1px solid var(--line);
+    border-radius:12px;padding:13px 14px;font-size:13.5px;color:var(--mut);line-height:1.45;
+    opacity:0;height:0;overflow:hidden;transition:.25s}
+  .explain.on{opacity:1;height:auto;padding:13px 14px}
+  .explain b{color:var(--txt)}
+  .next{margin-top:16px}
+
+  /* result */
+  .scorebig{font-size:64px;font-weight:900;line-height:1;letter-spacing:-2px;margin:6px 0 0;
+    background:linear-gradient(180deg,#fff,var(--grn));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .scoresub{color:var(--mut);font-size:15px;margin:8px 0 2px}
+  .rgrade{font-size:20px;font-weight:800;margin:14px 0 0}
+  .rrow{display:flex;gap:10px;margin-top:18px}
+  .preview{margin:18px 0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#000}
+  .preview img{display:block;width:100%}
+  .lb{margin-top:6px}
+  .lb h3{font-size:14px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:0 0 10px}
+  .lbrow{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);margin-bottom:8px}
+  .lbrow .rank{width:24px;font-weight:800;color:var(--mut);text-align:center}
+  .lbrow.me{background:rgba(31,216,115,.14);border-color:rgba(31,216,115,.3)}
+  .lbrow .nm{flex:1;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lbrow .sc{font-weight:800;color:var(--grn)}
+  .lbrow .top .rank{color:var(--gold)}
+  input.nm{width:100%;background:rgba(255,255,255,.06);border:1.5px solid var(--line);border-radius:12px;
+    padding:14px;color:#fff;font-size:15px;font-family:inherit;margin-bottom:10px}
+  input.nm:focus{outline:none;border-color:var(--grn)}
+
+  .challenge-banner{background:linear-gradient(180deg,rgba(57,184,255,.18),rgba(57,184,255,.06));
+    border:1px solid rgba(57,184,255,.3);border-radius:14px;padding:14px;margin-bottom:16px;font-size:14px}
+  .challenge-banner b{color:var(--blu)}
+  .muted{color:var(--mut);font-size:12px;text-align:center;margin-top:18px;line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);
+    background:#fff;color:#07150d;font-weight:700;font-size:14px;padding:12px 18px;border-radius:999px;
+    box-shadow:var(--shadow);opacity:0;transition:.25s;z-index:50;pointer-events:none}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:40}
+  .spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--grn);
+    animation:rot .8s linear infinite;margin:30px auto}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .center{text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <section id="home" class="screen on">
+    <div class="brand">
+      <div class="ball"></div>
+      <div><b>Match Day Quiz</b><span>World Cup 2026</span></div>
+    </div>
+
+    <div id="challengeBanner"></div>
+
+    <div class="card">
+      <span class="pill">● <span id="mdLabel">Loading…</span></span>
+      <h1 id="qTitle">Match Day Quiz</h1>
+      <p class="sub" id="qSub">Test how closely you watched today's matches.</p>
+      <button class="btn btn-primary" id="playBtn">▶ &nbsp;Play today's quiz</button>
+      <div class="stats">
+        <div class="stat streak"><b id="streakN">0</b><span>🔥 Day streak</span></div>
+        <div class="stat"><b id="bestN">—</b><span>Best score</span></div>
+        <div class="stat"><b id="playedN">0</b><span>Quizzes</span></div>
+      </div>
+    </div>
+    <div class="archive"><a id="archiveLink" href="#">▾ Past match days</a></div>
+    <p class="muted">New quiz drops after every match day · June 11 – July 19</p>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="screen">
+    <div class="qtop">
+      <span class="qcount"><span id="qNow">1</span> / <span id="qTot">10</span></span>
+      <span class="combo" id="combo">🔥 Streak x2</span>
+    </div>
+    <div class="timebar"><div class="timefill" id="timefill"></div></div>
+    <div class="qtext" id="qText">…</div>
+    <div class="opts" id="opts"></div>
+    <div class="explain" id="explain"></div>
+    <button class="btn btn-primary next" id="nextBtn" style="display:none">Next →</button>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result" class="screen">
+    <div class="card center">
+      <span class="pill" id="rPill">Match Day 7</span>
+      <div class="scorebig"><span id="rScore">0</span></div>
+      <div class="scoresub"><span id="rCorrect">0</span>/<span id="rTotal">10</span> correct · <span id="rPts">0</span> pts</div>
+      <div class="rgrade" id="rGrade">Nice one!</div>
+      <div id="vsBlock"></div>
+      <div class="preview" id="cardPreview"></div>
+      <button class="btn btn-gold" id="shareBtn">📲 &nbsp;Share my score</button>
+      <div class="rrow">
+        <button class="btn btn-ghost sm" id="challengeBtn">🎯 Challenge a friend</button>
+        <button class="btn btn-ghost sm" id="replayBtn">↻ Home</button>
+      </div>
+    </div>
+
+    <div class="card lb" style="margin-top:16px">
+      <h3>Leaderboard — <span id="lbDay">today</span></h3>
+      <div id="nameWrap">
+        <input class="nm" id="nameInput" maxlength="16" placeholder="Your name to join the board" />
+        <button class="btn btn-primary sm" id="submitScore">Submit score</button>
+      </div>
+      <div id="lbList" style="margin-top:12px"></div>
+    </div>
+    <p class="muted" id="lbNote"></p>
+  </section>
+
+  <!-- ARCHIVE -->
+  <section id="archive" class="screen">
+    <div class="brand"><div class="ball"></div><div><b>Past Match Days</b><span>Replay any quiz</span></div></div>
+    <div id="archiveList"></div>
+    <button class="btn btn-ghost" id="backHome" style="margin-top:14px">← Back</button>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const CONFIG = {
+  // Leave both blank to use on-device (localStorage) leaderboard.
+  // Fill these in to switch on a real global leaderboard (see README).
+  SUPABASE_URL: "",          // e.g. "https://abcd.supabase.co"
+  SUPABASE_ANON_KEY: "",     // your anon public key
+  QUIZ_SECONDS: 15           // time per question
+};
+
+/* ============================================================
+   EMBEDDED FALLBACK QUIZ
+   Used if quizzes/latest.json can't be fetched (e.g. opened via
+   file:// with no server). The pipeline keeps latest.json fresh;
+   this is just so the app always works when double-clicked.
+   ============================================================ */
+const FALLBACK_QUIZ = {
+  "id":"2026-06-17","matchday":"Matchday 7","date":"2026-06-17",
+  "title":"Matchday 7 Recap","subtitle":"Portugal, England and Colombia get their tournaments going",
+  "questions":[
+    {"q":"England opened their Group L campaign against which European rival?","options":["Croatia","Serbia","Switzerland","Poland"],"answer":0,"explain":"England faced Croatia in their first group match in Arlington, Texas.","difficulty":"easy"},
+    {"q":"Which stadium hosted England vs Croatia?","options":["MetLife Stadium","AT&T Stadium, Arlington","Mercedes-Benz Stadium","SoFi Stadium"],"answer":1,"explain":"Played at AT&T Stadium in Arlington, near Dallas.","difficulty":"medium"},
+    {"q":"Portugal began their Group K campaign in which US city?","options":["Miami","Houston","Seattle","Atlanta"],"answer":1,"explain":"Portugal's opener was staged in Houston.","difficulty":"medium"},
+    {"q":"Uzbekistan faced which South American side on Matchday 7?","options":["Ecuador","Paraguay","Colombia","Uruguay"],"answer":2,"explain":"Uzbekistan met Colombia in Mexico City in Group K.","difficulty":"medium"},
+    {"q":"Ghana vs Panama was played in which Canadian host city?","options":["Vancouver","Toronto","Montreal","Edmonton"],"answer":1,"explain":"Toronto hosted the Group L meeting.","difficulty":"hard"},
+    {"q":"England, Croatia, Ghana and Panama all belong to which group?","options":["Group J","Group K","Group L","Group I"],"answer":2,"explain":"All four are in Group L.","difficulty":"easy"},
+    {"q":"2026 is the first World Cup with how many teams?","options":["32","40","48","64"],"answer":2,"explain":"The field expanded to 48 teams.","difficulty":"easy"},
+    {"q":"The 2026 World Cup is co-hosted by the USA, Canada and which nation?","options":["Mexico","Brazil","Costa Rica","Panama"],"answer":0,"explain":"USA, Canada and Mexico share hosting.","difficulty":"easy"},
+    {"q":"Which all-time great captains Portugal?","options":["Bruno Fernandes","João Félix","Cristiano Ronaldo","Bernardo Silva"],"answer":2,"explain":"Cristiano Ronaldo leads Portugal again.","difficulty":"easy"},
+    {"q":"The July 19 final will be held at which venue?","options":["SoFi Stadium","MetLife Stadium","Estadio Azteca","AT&T Stadium"],"answer":1,"explain":"The final is at MetLife Stadium, New Jersey.","difficulty":"medium"}
+  ]
+};
+
+/* ============================================================
+   STATE + HELPERS
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const PTS = {easy:100, medium:150, hard:200};
+let QUIZ=null, idx=0, score=0, correctCount=0, streak=0, maxStreak=0, answered=false;
+let timer=null, timeLeft=0, qStart=0, challengeFrom=null;
+const store = {
+  get:(k,d)=>{try{return JSON.parse(localStorage.getItem('mdq_'+k))??d}catch(e){return d}},
+  set:(k,v)=>{try{localStorage.setItem('mdq_'+k,JSON.stringify(v))}catch(e){}}
+};
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$('#'+id).classList.add('on');window.scrollTo(0,0);}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2000);}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+(async function init(){
+  parseChallenge();
+  await loadQuiz();
+  renderHome();
+  wireHome();
+})();
+
+async function loadQuiz(){
+  // If a challenge specifies a quiz id, try to load that exact quiz first.
+  const wantId = challengeFrom?.q;
+  try{
+    let url = 'quizzes/latest.json';
+    if(wantId) url = 'quizzes/matchday-'+wantId+'.json';
+    const r = await fetch(url, {cache:'no-store'});
+    if(!r.ok) throw 0;
+    QUIZ = await r.json();
+  }catch(e){
+    QUIZ = FALLBACK_QUIZ;
+  }
+}
+
+function renderHome(){
+  $('#mdLabel').textContent = QUIZ.matchday || 'Today';
+  $('#qTitle').textContent  = QUIZ.title || 'Match Day Quiz';
+  $('#qSub').textContent    = QUIZ.subtitle || "Test how closely you watched today's matches.";
+  $('#streakN').textContent = computeStreak();
+  const best = store.get('best_'+QUIZ.id, null);
+  $('#bestN').textContent   = best!=null ? best+'/10' : '—';
+  $('#playedN').textContent = (store.get('playedIds',[])||[]).length;
+
+  if(challengeFrom){
+    $('#challengeBanner').innerHTML =
+      `<div class="challenge-banner">🎯 <b>${esc(challengeFrom.n)}</b> challenged you — they scored
+       <b>${challengeFrom.s}</b> pts on ${esc(QUIZ.matchday)}. Beat them!</div>`;
+  }
+}
+
+function wireHome(){
+  $('#playBtn').onclick = startQuiz;
+  $('#archiveLink').onclick = e=>{e.preventDefault();openArchive();};
+  $('#backHome').onclick = ()=>show('home');
+}
+
+/* ============================================================
+   QUIZ FLOW
+   ============================================================ */
+function startQuiz(){
+  idx=0;score=0;correctCount=0;streak=0;maxStreak=0;
+  show('quiz');$('#qTot').textContent=QUIZ.questions.length;
+  renderQ();
+}
+function renderQ(){
+  answered=false;
+  const q=QUIZ.questions[idx];
+  $('#qNow').textContent=idx+1;
+  $('#qText').textContent=q.q;
+  $('#explain').className='explain';$('#explain').innerHTML='';
+  $('#nextBtn').style.display='none';
+  $('#combo').classList.toggle('on', streak>=2);
+  $('#combo').textContent='🔥 Streak x'+(1+Math.min(streak,4));
+  const ow=$('#opts');ow.innerHTML='';
+  q.options.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.innerHTML=`<span class="k">${'ABCD'[i]}</span><span>${esc(opt)}</span>`;
+    b.onclick=()=>pick(i);
+    ow.appendChild(b);
+  });
+  startTimer();
+  qStart=Date.now();
+}
+function startTimer(){
+  timeLeft=CONFIG.QUIZ_SECONDS;
+  const fill=$('#timefill');fill.style.width='100%';
+  clearInterval(timer);
+  const t0=Date.now();
+  timer=setInterval(()=>{
+    const el=(Date.now()-t0)/1000;
+    timeLeft=Math.max(0,CONFIG.QUIZ_SECONDS-el);
+    fill.style.width=(timeLeft/CONFIG.QUIZ_SECONDS*100)+'%';
+    if(timeLeft<=0){clearInterval(timer);pick(-1);}
+  },80);
+}
+function pick(i){
+  if(answered)return;answered=true;clearInterval(timer);
+  const q=QUIZ.questions[idx];
+  const opts=document.querySelectorAll('.opt');
+  const correct=q.answer;
+  const secsUsed=(Date.now()-qStart)/1000;
+  const right = i===correct;
+
+  opts.forEach((o,j)=>{
+    if(j===correct)o.classList.add('correct');
+    else if(j===i)o.classList.add('wrong');
+    else o.classList.add('dim');
+    o.onclick=null;
+  });
+
+  if(right){
+    correctCount++;streak++;maxStreak=Math.max(maxStreak,streak);
+    const base=PTS[q.difficulty]||120;
+    const timeBonus=Math.round((Math.max(0,CONFIG.QUIZ_SECONDS-secsUsed)/CONFIG.QUIZ_SECONDS)*60);
+    const mult=1+Math.min(streak-1,4)*0.25; // up to x2
+    const gained=Math.round((base+timeBonus)*mult);
+    score+=gained;
+    $('#qText').insertAdjacentHTML('beforeend','');
+  }else{
+    streak=0;
+  }
+
+  const ex=$('#explain');
+  ex.innerHTML=(right?'<b>✓ Correct.</b> ':'<b>✗ Not quite.</b> ')+esc(q.explain||'');
+  ex.classList.add('on');
+  const nb=$('#nextBtn');
+  nb.textContent = idx+1>=QUIZ.questions.length ? 'See results →' : 'Next →';
+  nb.style.display='block';
+  nb.onclick=()=>{ if(idx+1>=QUIZ.questions.length){finish();}else{idx++;renderQ();} };
+}
+
+/* ============================================================
+   RESULTS + SHARING
+   ============================================================ */
+function finish(){
+  show('result');
+  recordPlay();
+  $('#rPill').textContent=QUIZ.matchday;
+  $('#rScore').textContent=score;
+  $('#rCorrect').textContent=correctCount;
+  $('#rTotal').textContent=QUIZ.questions.length;
+  $('#rPts').textContent=score;
+  $('#rGrade').textContent=grade(correctCount,QUIZ.questions.length);
+  $('#lbDay').textContent=QUIZ.matchday;
+
+  // challenge result comparison
+  if(challengeFrom){
+    const beat=score>=challengeFrom.s;
+    $('#vsBlock').innerHTML=`<div class="challenge-banner" style="margin-top:16px">
+      ${beat?'🏆 <b>You win!</b>':'😬 <b>So close.</b>'} You ${beat?'beat':'lost to'}
+      <b>${esc(challengeFrom.n)}</b> — ${score} vs ${challengeFrom.s} pts.</div>`;
+  }else{$('#vsBlock').innerHTML='';}
+
+  buildCard();
+  wireResult();
+  renderLeaderboard();
+  $('#lbNote').textContent = usingSupabase()
+    ? 'Global leaderboard · resets each match day'
+    : 'Scores saved on this device. Turn on the global board in README.';
+  if(correctCount>=8) confetti();
+}
+
+function wireResult(){
+  $('#replayBtn').onclick=()=>{location.hash='';show('home');renderHome();};
+  $('#shareBtn').onclick=shareScore;
+  $('#challengeBtn').onclick=makeChallenge;
+  $('#submitScore').onclick=submitScore;
+}
+
+function grade(c,t){
+  const p=c/t;
+  if(p===1)return '🐐 Flawless. Were you on the pitch?';
+  if(p>=.8)return '🔥 Elite. You watched every minute.';
+  if(p>=.6)return '👏 Solid. Proper fan.';
+  if(p>=.4)return '👀 Not bad — catch the replays.';
+  return '😅 Rough one. Tomorrow’s your day.';
+}
+
+/* ---- score card (canvas) ---- */
+let cardBlob=null, cardURL=null;
+function buildCard(){
+  const c=document.createElement('canvas');c.width=1080;c.height=1350;
+  const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,1350);
+  g.addColorStop(0,'#16432b');g.addColorStop(.55,'#0d2418');g.addColorStop(1,'#07150d');
+  x.fillStyle=g;x.fillRect(0,0,1080,1350);
+  // glow
+  const rg=x.createRadialGradient(540,360,40,540,360,640);
+  rg.addColorStop(0,'rgba(31,216,115,.28)');rg.addColorStop(1,'rgba(31,216,115,0)');
+  x.fillStyle=rg;x.fillRect(0,0,1080,900);
+  x.textAlign='center';
+  x.fillStyle='#8fb6a0';x.font='700 34px -apple-system,Arial';
+  x.fillText('MATCH DAY QUIZ · WORLD CUP 2026',540,150);
+  x.fillStyle='#fff';x.font='800 56px -apple-system,Arial';
+  x.fillText(QUIZ.matchday.toUpperCase(),540,235);
+  // big score
+  x.fillStyle='#1fd873';x.font='900 300px -apple-system,Arial';
+  x.fillText(correctCount+'/'+QUIZ.questions.length,540,640);
+  x.fillStyle='#ffd23f';x.font='800 64px -apple-system,Arial';
+  x.fillText(score.toLocaleString()+' PTS',540,760);
+  x.fillStyle='#eafff2';x.font='600 44px -apple-system,Arial';
+  wrap(x,grade(correctCount,QUIZ.questions.length).replace(/^[^\sA-Za-z]+\s/,''),540,900,820,56);
+  // streak
+  if(maxStreak>=3){x.fillStyle='#ffd23f';x.font='800 40px -apple-system,Arial';
+    x.fillText('🔥 best streak: '+maxStreak,540,1040);}
+  // footer
+  x.fillStyle='rgba(255,255,255,.12)';x.fillRect(140,1150,800,3);
+  x.fillStyle='#8fb6a0';x.font='700 38px -apple-system,Arial';
+  x.fillText('Can you beat me? Play the daily quiz ▶',540,1240);
+
+  c.toBlob(b=>{cardBlob=b;if(cardURL)URL.revokeObjectURL(cardURL);cardURL=URL.createObjectURL(b);
+    $('#cardPreview').innerHTML='';const im=new Image();im.src=cardURL;$('#cardPreview').appendChild(im);
+  },'image/png');
+}
+function wrap(x,txt,cx,cy,max,lh){
+  const words=txt.split(' ');let line='',y=cy;
+  for(const w of words){const t=line+w+' ';if(x.measureText(t).width>max&&line){x.fillText(line.trim(),cx,y);line=w+' ';y+=lh;}else line=t;}
+  x.fillText(line.trim(),cx,y);
+}
+async function shareScore(){
+  const text=`I scored ${correctCount}/${QUIZ.questions.length} (${score} pts) on ${QUIZ.matchday} of the Match Day Quiz. Can you beat me?`;
+  try{
+    if(cardBlob && navigator.canShare && navigator.canShare({files:[new File([cardBlob],'score.png',{type:'image/png'})]})){
+      await navigator.share({files:[new File([cardBlob],'score.png',{type:'image/png'})],text});
+      return;
+    }
+    if(navigator.share){await navigator.share({text,url:location.href.split('#')[0]});return;}
+    throw 0;
+  }catch(e){
+    // fallback: download image + copy text
+    if(cardURL){const a=document.createElement('a');a.href=cardURL;a.download='matchday-score.png';a.click();}
+    try{await navigator.clipboard.writeText(text+' '+location.href.split('#')[0]);}catch(_){}
+    toast('Image saved · caption copied');
+  }
+}
+function makeChallenge(){
+  const payload=btoa(JSON.stringify({q:QUIZ.id,n:(myName()||'A friend').slice(0,16),s:score}));
+  const link=location.href.split('#')[0]+'#c='+payload;
+  const text=`🎯 I scored ${score} on ${QUIZ.matchday}. Think you can beat me? ${link}`;
+  if(navigator.share){navigator.share({text}).catch(()=>{});}
+  else{navigator.clipboard.writeText(text).then(()=>toast('Challenge link copied!')).catch(()=>toast(link));}
+}
+
+/* ============================================================
+   STREAK / HISTORY
+   ============================================================ */
+function recordPlay(){
+  const ids=store.get('playedIds',[]);
+  if(!ids.includes(QUIZ.id)){ids.push(QUIZ.id);store.set('playedIds',ids);}
+  const best=store.get('best_'+QUIZ.id,0);
+  if(correctCount>best)store.set('best_'+QUIZ.id,correctCount);
+  // streak log by date
+  const days=store.get('playDays',[]);
+  if(!days.includes(QUIZ.date)){days.push(QUIZ.date);store.set('playDays',days);}
+}
+function computeStreak(){
+  const days=(store.get('playDays',[])||[]).slice().sort();
+  if(!days.length)return 0;
+  let streak=1;
+  for(let i=days.length-1;i>0;i--){
+    const d1=new Date(days[i]),d0=new Date(days[i-1]);
+    const diff=Math.round((d1-d0)/86400000);
+    if(diff===1)streak++;else if(diff>1)break;
+  }
+  return streak;
+}
+
+/* ============================================================
+   LEADERBOARD  (localStorage now · Supabase-ready)
+   ============================================================ */
+function usingSupabase(){return CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;}
+function myName(){return store.get('name','');}
+
+async function submitScore(){
+  const nm=($('#nameInput').value||'').trim().slice(0,16);
+  if(!nm){toast('Enter a name first');return;}
+  store.set('name',nm);
+  const entry={name:nm,score,correct:correctCount,quiz:QUIZ.id,ts:Date.now()};
+  if(usingSupabase()){
+    try{
+      await fetch(CONFIG.SUPABASE_URL+'/rest/v1/scores',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':CONFIG.SUPABASE_ANON_KEY,
+          'Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY,'Prefer':'return=minimal'},
+        body:JSON.stringify(entry)
+      });
+    }catch(e){}
+  }else{
+    const key='lb_'+QUIZ.id;const all=store.get(key,[]);
+    all.push(entry);store.set(key,all);
+  }
+  $('#nameWrap').style.display='none';
+  renderLeaderboard();
+  toast('You’re on the board! 🎉');
+}
+
+async function renderLeaderboard(){
+  let rows=[];
+  if(usingSupabase()){
+    try{
+      const r=await fetch(CONFIG.SUPABASE_URL+'/rest/v1/scores?quiz=eq.'+QUIZ.id+'&order=score.desc&limit=10',
+        {headers:{'apikey':CONFIG.SUPABASE_ANON_KEY,'Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY}});
+      rows=await r.json();
+    }catch(e){rows=[];}
+  }else{
+    rows=(store.get('lb_'+QUIZ.id,[])||[]).slice();
+  }
+  rows.sort((a,b)=>b.score-a.score);
+  rows=rows.slice(0,10);
+  const me=myName();
+  const el=$('#lbList');
+  if(!rows.length){el.innerHTML='<p class="muted" style="margin:0">Be the first to post a score.</p>';return;}
+  el.innerHTML=rows.map((r,i)=>`
+    <div class="lbrow ${r.name===me?'me':''} ${i===0?'top':''}">
+      <div class="rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)}</div>
+      <div class="nm">${esc(r.name)}</div>
+      <div class="sc">${r.score}</div>
+    </div>`).join('');
+}
+
+/* ============================================================
+   ARCHIVE
+   ============================================================ */
+async function openArchive(){
+  show('archive');
+  const el=$('#archiveList');el.innerHTML='<div class="spin"></div>';
+  let list=[];
+  try{const r=await fetch('quizzes/index.json',{cache:'no-store'});const j=await r.json();list=j.quizzes||[];}
+  catch(e){list=[{id:QUIZ.id,matchday:QUIZ.matchday,title:QUIZ.title,date:QUIZ.date,file:'latest.json'}];}
+  if(!list.length){el.innerHTML='<p class="muted">No past quizzes yet.</p>';return;}
+  el.innerHTML=list.map(q=>`
+    <div class="card" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;padding:16px">
+      <div><b>${esc(q.matchday||q.title)}</b><div class="sub" style="margin:2px 0 0">${esc(q.date||'')}</div></div>
+      <button class="btn btn-ghost sm" style="width:auto;padding:10px 16px" data-id="${q.id}" data-file="${q.file||('matchday-'+q.id+'.json')}">Play</button>
+    </div>`).join('');
+  el.querySelectorAll('button[data-id]').forEach(b=>{
+    b.onclick=async()=>{
+      try{const r=await fetch('quizzes/'+b.dataset.file,{cache:'no-store'});QUIZ=await r.json();}
+      catch(e){toast('Could not load that quiz');return;}
+      renderHome();startQuiz();
+    };
+  });
+}
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function parseChallenge(){
+  const m=location.hash.match(/c=([^&]+)/);
+  if(!m)return;
+  try{challengeFrom=JSON.parse(atob(decodeURIComponent(m[1])));}catch(e){challengeFrom=null;}
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function confetti(){
+  const cv=document.createElement('canvas');cv.className='confetti';
+  cv.width=innerWidth;cv.height=innerHeight;document.body.appendChild(cv);
+  const x=cv.getContext('2d');const cols=['#1fd873','#ffd23f','#39b8ff','#ff5470','#fff'];
+  const P=Array.from({length:130},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height,
+    r:4+Math.random()*6,c:cols[Math.random()*cols.length|0],v:2+Math.random()*4,a:Math.random()*6.28,
+    s:(Math.random()-.5)*4}));
+  let t=0;(function loop(){t++;x.clearRect(0,0,cv.width,cv.height);
+    P.forEach(p=>{p.y+=p.v;p.x+=Math.sin(p.a+=.05)+p.s*.3;
+      x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);x.restore();});
+    if(t<150)requestAnimationFrame(loop);else cv.remove();})();
+}
+</script>
+</body>
+</html>

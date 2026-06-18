@@ -1,0 +1,80 @@
+{
+  "id": "2026-06-17",
+  "matchday": "Matchday 7",
+  "date": "2026-06-17",
+  "title": "Matchday 7 Recap",
+  "subtitle": "Portugal, England and Colombia get their tournaments going",
+  "generated": "manual",
+  "questions": [
+    {
+      "q": "England opened their Group L campaign against which European rival?",
+      "options": ["Croatia", "Serbia", "Switzerland", "Poland"],
+      "answer": 0,
+      "explain": "England faced Croatia in their first group match in Arlington, Texas.",
+      "difficulty": "easy"
+    },
+    {
+      "q": "Which stadium hosted England vs Croatia?",
+      "options": ["MetLife Stadium", "AT&T Stadium, Arlington", "Mercedes-Benz Stadium", "SoFi Stadium"],
+      "answer": 1,
+      "explain": "The match was played at AT&T Stadium in Arlington, near Dallas.",
+      "difficulty": "medium"
+    },
+    {
+      "q": "Portugal began their Group K campaign in which US city?",
+      "options": ["Miami", "Houston", "Seattle", "Atlanta"],
+      "answer": 1,
+      "explain": "Portugal's opener was staged in Houston.",
+      "difficulty": "medium"
+    },
+    {
+      "q": "Making a notable World Cup appearance on Matchday 7, Uzbekistan faced which South American side?",
+      "options": ["Ecuador", "Paraguay", "Colombia", "Uruguay"],
+      "answer": 2,
+      "explain": "Uzbekistan met Colombia in Mexico City in Group K.",
+      "difficulty": "medium"
+    },
+    {
+      "q": "Ghana vs Panama was played in which Canadian host city?",
+      "options": ["Vancouver", "Toronto", "Montreal", "Edmonton"],
+      "answer": 1,
+      "explain": "Toronto hosted the Group L meeting between Ghana and Panama.",
+      "difficulty": "hard"
+    },
+    {
+      "q": "England, Croatia, Ghana and Panama all belong to which group?",
+      "options": ["Group J", "Group K", "Group L", "Group I"],
+      "answer": 2,
+      "explain": "All four sides are in Group L at the 2026 World Cup.",
+      "difficulty": "easy"
+    },
+    {
+      "q": "2026 is the first World Cup to feature how many teams?",
+      "options": ["32", "40", "48", "64"],
+      "answer": 2,
+      "explain": "The field expanded to 48 teams for the first time in 2026.",
+      "difficulty": "easy"
+    },
+    {
+      "q": "The 2026 World Cup is co-hosted by the USA, Canada and which third nation?",
+      "options": ["Mexico", "Brazil", "Costa Rica", "Panama"],
+      "answer": 0,
+      "explain": "The USA, Canada and Mexico are sharing hosting duties.",
+      "difficulty": "easy"
+    },
+    {
+      "q": "Which all-time great captains Portugal at this tournament?",
+      "options": ["Bruno Fernandes", "João Félix", "Cristiano Ronaldo", "Bernardo Silva"],
+      "answer": 2,
+      "explain": "Cristiano Ronaldo leads the Portugal side once again.",
+      "difficulty": "easy"
+    },
+    {
+      "q": "The 2026 World Cup final on July 19 will be held at which venue?",
+      "options": ["SoFi Stadium, Los Angeles", "MetLife Stadium, New York/New Jersey", "Estadio Azteca, Mexico City", "AT&T Stadium, Dallas"],
+      "answer": 1,
+      "explain": "The final is at MetLife Stadium in East Rutherford, New Jersey.",
+      "difficulty": "medium"
+    }
+  ]
+}
