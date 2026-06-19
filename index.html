@@ -314,7 +314,11 @@ const store = {
   set:(k,v)=>{try{localStorage.setItem('mdq_'+k,JSON.stringify(v))}catch(e){}}
 };
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$('#'+id).classList.add('on');window.scrollTo(0,0);}
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2000);}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
+// Run a function, swallowing (and surfacing) any error so one failure can't break the page.
+function safe(fn){try{return fn();}catch(e){try{toast('⚠ '+(e&&e.message?e.message:e));}catch(_){}console.error(e);}}
+// Surface any unexpected runtime error visibly, to make remote debugging possible.
+window.addEventListener('error',e=>{try{toast('⚠ '+(e.message||'script error'));}catch(_){}});
 
 /* ============================================================
    BOOT
@@ -452,31 +456,36 @@ function pick(i){
    ============================================================ */
 function finish(){
   show('result');
-  recordPlay();
-  $('#rPill').textContent=QUIZ.matchday;
-  $('#rScore').textContent=score;
-  $('#rCorrect').textContent=correctCount;
-  $('#rTotal').textContent=QUIZ.questions.length;
-  $('#rPts').textContent=score;
-  $('#rGrade').textContent=grade(correctCount,QUIZ.questions.length);
-  $('#lbDay').textContent=QUIZ.matchday;
-
-  // challenge result comparison
-  if(challengeFrom){
-    const beat=score>=challengeFrom.s;
-    $('#vsBlock').innerHTML=`<div class="challenge-banner" style="margin-top:16px">
-      ${beat?'🏆 <b>You win!</b>':'😬 <b>So close.</b>'} You ${beat?'beat':'lost to'}
-      <b>${esc(challengeFrom.n)}</b> — ${score} vs ${challengeFrom.s} pts.</div>`;
-  }else{$('#vsBlock').innerHTML='';}
-
-  buildCard();
+  // Wire the buttons FIRST — nothing below can stop them from working.
   wireResult();
   setTab('today');
-  renderLeaderboard();
-  $('#lbNote').textContent = usingSupabase()
+  safe(()=>recordPlay());
+  safe(()=>{
+    $('#rPill').textContent=QUIZ.matchday;
+    $('#rScore').textContent=score;
+    $('#rCorrect').textContent=correctCount;
+    $('#rTotal').textContent=QUIZ.questions.length;
+    $('#rPts').textContent=score;
+    $('#rGrade').textContent=grade(correctCount,QUIZ.questions.length);
+    $('#lbDay').textContent=QUIZ.matchday;
+  });
+
+  // challenge result comparison
+  safe(()=>{
+    if(challengeFrom){
+      const beat=score>=challengeFrom.s;
+      $('#vsBlock').innerHTML=`<div class="challenge-banner" style="margin-top:16px">
+        ${beat?'🏆 <b>You win!</b>':'😬 <b>So close.</b>'} You ${beat?'beat':'lost to'}
+        <b>${esc(challengeFrom.n)}</b> — ${score} vs ${challengeFrom.s} pts.</div>`;
+    }else{$('#vsBlock').innerHTML='';}
+  });
+
+  safe(()=>buildCard());
+  safe(()=>renderLeaderboard());
+  safe(()=>{ $('#lbNote').textContent = usingSupabase()
     ? 'Global leaderboard · resets each match day'
-    : 'Scores saved on this device. Turn on the global board in README.';
-  if(correctCount>=8) confetti();
+    : 'Scores saved on this device. Turn on the global board in README.'; });
+  if(correctCount>=8) safe(()=>confetti());
 }
 
 function wireResult(){
