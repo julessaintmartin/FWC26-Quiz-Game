@@ -47,8 +47,28 @@ writes `quizzes/matchday-<date>.json`, refreshes `quizzes/latest.json`, and upda
 archive in `quizzes/index.json`. If results are in it makes a recap (scores/winners/goals);
 if not, a preview (matchups/cities/groups) — re-run after full time to upgrade it.
 
-Richer questions later: only `fetch_matches()` knows about the data source — swap it for a
-paid API (API-Football, Sportmonks, BALLDONTLIE) and everything else still works.
+Richer questions later: only `fetch_matches()` knows about the baseline source — swap it for a
+paid API and everything else still works.
+
+### Niche "beyond the scoreline" questions (optional, free to try)
+
+By default the auto-questions cover scores, winners, cities and groups. To add genuinely niche
+questions about *what happened in the game* — opening goalscorer, who assisted, who got sent off,
+who scored a brace — give the generator an **API-Football** key. It pulls real, sourced match
+events (no AI guesswork). Setup:
+
+1. Create a free account at **dashboard.api-football.com** (free tier = 100 requests/day, no card).
+2. Copy your API key (it's the `x-apisports-key`).
+3. **For the daily GitHub Action:** in your repo on GitHub → **Settings → Secrets and variables →
+   Actions → New repository secret**. Name it exactly `APIFOOTBALL_KEY`, paste the key, save.
+   The workflow already passes it through.
+4. **To run locally:** `APIFOOTBALL_KEY=your-key python3 generate_quiz.py`
+
+That's it — niche questions get prioritised in each quiz. If the key is missing, or the free plan
+turns out not to expose live 2026 events, the generator **automatically falls back** to the
+score/fact questions and prints a note in the logs. Nothing breaks either way. If the free tier
+doesn't cover 2026 events, your options are API-Football Pro (~$19/mo) or BALLDONTLIE GOAT
+(~$40/mo), which both carry full event data.
 
 ---
 

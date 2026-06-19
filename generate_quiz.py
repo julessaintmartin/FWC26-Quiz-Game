@@ -29,11 +29,22 @@ that one function to return the same shape:
 Everything downstream stays the same.
 """
 
-import json, sys, os, random, urllib.request, datetime
+import json, sys, os, random, urllib.request, urllib.parse, datetime
+from collections import Counter
 from pathlib import Path
 
 FEED = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
 OUT  = Path(__file__).parent / "quizzes"
+
+# --- Optional: real in-game events (scorers, assists, cards) from API-Football ---
+# Set the APIFOOTBALL_KEY env var to switch on niche, "beyond the scoreline" questions.
+# Get a free key at https://dashboard.api-football.com (free tier = 100 requests/day).
+# If the key is missing OR the free plan doesn't expose 2026 events, the generator
+# silently falls back to the score/fact questions — nothing breaks either way.
+APIFOOTBALL_KEY  = os.environ.get("APIFOOTBALL_KEY", "").strip()
+APIFOOTBALL_BASE = "https://v3.football.api-sports.io"
+WORLD_CUP_LEAGUE = 1      # API-Football league id for the FIFA World Cup
+SEASON           = 2026
 
 HOST_CITIES = ["Atlanta","Boston (Foxborough)","Dallas (Arlington)","Guadalajara (Zapopan)",
     "Houston","Kansas City","Los Angeles (Inglewood)","Mexico City","Miami (Miami Gardens)",
@@ -150,18 +161,109 @@ EVERGREEN = [
 ]
 
 # ----------------------------------------------------------------------
+# 2b. NICHE QUESTIONS FROM REAL MATCH EVENTS  (API-Football, optional)
+# ----------------------------------------------------------------------
+def _af_get(path, params):
+    url = APIFOOTBALL_BASE + path + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"x-apisports-key": APIFOOTBALL_KEY})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)
+
+def _distractors(pool, correct, n=3):
+    cand = [p for p in pool if p and p != correct]
+    return random.sample(cand, min(n, len(cand)))
+
+def fetch_event_questions(date_str):
+    """Build niche MCQs from real match events. Returns [] on any problem
+    (no key, free plan blocks 2026, network error) so the quiz still ships."""
+    if not APIFOOTBALL_KEY:
+        return []
+    try:
+        fx = _af_get("/fixtures", {"league": WORLD_CUP_LEAGUE, "season": SEASON, "date": date_str})
+        fixtures = fx.get("response", [])
+        if not fixtures:
+            print(f"  API-Football: 0 fixtures for {date_str} "
+                  f"(errors={fx.get('errors')}) — free plan may not cover 2026. Using baseline questions.")
+            return []
+        per_match, pool = [], set()
+        for f in fixtures:
+            fid  = f["fixture"]["id"]
+            home = f["teams"]["home"]["name"]
+            away = f["teams"]["away"]["name"]
+            ev   = _af_get("/fixtures/events", {"fixture": fid})
+            events = ev.get("response", [])
+            per_match.append({"home": home, "away": away, "events": events})
+            for e in events:
+                nm = (e.get("player") or {}).get("name")
+                if nm: pool.add(nm)
+        pool = sorted(pool)
+        qs = build_event_questions(per_match, pool)
+        print(f"  API-Football: built {len(qs)} event-based question(s) from {len(fixtures)} match(es).")
+        return qs
+    except Exception as e:
+        print(f"  API-Football events unavailable ({e}). Using baseline questions.")
+        return []
+
+def build_event_questions(per_match, pool):
+    """Turn real events into 'did you watch?' questions. Needs a decent player
+    pool so distractors are plausible; skips a question if it can't make 4 options."""
+    qs = []
+    if len(pool) < 4:
+        return qs
+    for m in per_match:
+        home, away, events = m["home"], m["away"], m["events"]
+        goals = [e for e in events if e.get("type") == "Goal"
+                 and (e.get("detail") or "") != "Missed Penalty"
+                 and (e.get("player") or {}).get("name")]
+        reds  = [e for e in events if e.get("type") == "Card"
+                 and "Red" in (e.get("detail") or "")
+                 and (e.get("player") or {}).get("name")]
+        # opening goal
+        if goals:
+            g = goals[0]; scorer = g["player"]["name"]
+            mins = (g.get("time") or {}).get("elapsed")
+            ex = f"{scorer} opened the scoring" + (f" in the {mins}' minute." if mins is not None else ".")
+            qs.append(mcq(f"Who scored the opening goal in {home} vs {away}?",
+                          scorer, _distractors(pool, scorer), ex, "hard"))
+        # assist on a goal
+        assisted = [e for e in goals if (e.get("assist") or {}).get("name")]
+        if assisted:
+            a = assisted[0]; assister = a["assist"]["name"]; scorer = a["player"]["name"]
+            qs.append(mcq(f"Who set up {scorer}'s goal in {home} vs {away}?",
+                          assister, _distractors(pool, assister),
+                          f"{assister} provided the assist.", "hard"))
+        # multi-goal scorer
+        counts = Counter(g["player"]["name"] for g in goals)
+        multi = [n for n, c in counts.items() if c >= 2]
+        if multi:
+            who = multi[0]
+            qs.append(mcq(f"Which player scored more than once in {home} vs {away}?",
+                          who, _distractors(pool, who),
+                          f"{who} scored {counts[who]} in this match.", "hard"))
+        # red card
+        if reds:
+            who = reds[0]["player"]["name"]
+            qs.append(mcq(f"Which player was sent off in {home} vs {away}?",
+                          who, _distractors(pool, who),
+                          f"{who} was shown a red card.", "hard"))
+    # keep questions that actually have >=4 options (plausible distractors)
+    return [q for q in qs if len(q["options"]) >= 4]
+
+# ----------------------------------------------------------------------
 # 3. ASSEMBLE
 # ----------------------------------------------------------------------
 def build_quiz(date_str, matches):
-    md = matches[0].get("round") if matches and matches[0].get("round") else None
-    # derive a matchday label from data if available; else from date
-    label = next((mm.get("round") for mm in [] if mm), None)
-    pool = []
+    # 1) niche, real-event questions first (empty unless an API-Football key is set)
+    niche = fetch_event_questions(date_str)
+    random.shuffle(niche)
+    # 2) baseline score/fact questions
+    base = []
     for m in matches:
-        pool += result_questions(m)
-    pool += fact_questions(matches)
-    random.shuffle(pool)
-    pool += [dict(q) for q in EVERGREEN]            # guarantee fillers at the end
+        base += result_questions(m)
+    base += fact_questions(matches)
+    random.shuffle(base)
+    # niche prioritised, then baseline, then evergreen fillers to guarantee 10
+    pool = niche + base + [dict(q) for q in EVERGREEN]
 
     # de-dupe by question text, take 10
     seen, qs = set(), []

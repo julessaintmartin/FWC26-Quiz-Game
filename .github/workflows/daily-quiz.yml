@@ -24,6 +24,11 @@ jobs:
           python-version: "3.11"
 
       - name: Generate yesterday's quiz
+        env:
+          # Optional: add a repo secret named APIFOOTBALL_KEY to unlock niche,
+          # in-game questions (scorers, assists, cards). Safe to leave unset —
+          # the generator falls back to score/fact questions automatically.
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}
         run: python3 generate_quiz.py
 
       - name: Commit & push if anything changed
