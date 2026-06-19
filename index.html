@@ -122,6 +122,18 @@
   input.nm{width:100%;background:rgba(255,255,255,.06);border:1.5px solid var(--line);border-radius:12px;
     padding:14px;color:#fff;font-size:15px;font-family:inherit;margin-bottom:10px}
   input.nm:focus{outline:none;border-color:var(--grn)}
+  .tabs{display:flex;gap:8px;margin:4px 0 6px}
+  .tab{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--mut);
+    border-radius:10px;padding:9px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s}
+  .tab.on{background:rgba(31,216,115,.16);border-color:rgba(31,216,115,.35);color:var(--txt)}
+  .champ{padding:6px 0}
+  .champ .crown{font-size:40px;line-height:1}
+  .champ .who{font-size:26px;font-weight:900;margin:6px 0 2px;
+    background:linear-gradient(180deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .champ .lab{color:var(--mut);font-size:13px;text-transform:uppercase;letter-spacing:.8px}
+  .countdown{font-size:13px;color:var(--gold);font-weight:800;margin-top:6px}
+  .prize{background:rgba(255,210,63,.12);border:1px solid rgba(255,210,63,.3);border-radius:12px;
+    padding:11px 14px;font-size:13.5px;margin-top:12px;color:var(--txt)}
 
   .challenge-banner{background:linear-gradient(180deg,rgba(57,184,255,.18),rgba(57,184,255,.06));
     border:1px solid rgba(57,184,255,.3);border-radius:14px;padding:14px;margin-bottom:16px;font-size:14px}
@@ -161,8 +173,10 @@
         <div class="stat"><b id="playedN">0</b><span>Quizzes</span></div>
       </div>
     </div>
-    <div class="archive"><a id="archiveLink" href="#">▾ Past match days</a></div>
-    <p class="muted">New quiz drops after every match day · June 11 – July 19</p>
+    <div id="champHome"></div>
+    <button class="btn btn-ghost" id="standingsBtn" style="margin-top:14px">🏆 &nbsp;Tournament standings</button>
+    <div class="archive" style="margin-top:14px"><a id="archiveLink" href="#">▾ Past match days</a></div>
+    <p class="muted" id="homeFoot">New quiz drops after every match day · June 11 – July 19</p>
   </section>
 
   <!-- QUIZ -->
@@ -195,12 +209,15 @@
     </div>
 
     <div class="card lb" style="margin-top:16px">
-      <h3>Leaderboard — <span id="lbDay">today</span></h3>
       <div id="nameWrap">
         <input class="nm" id="nameInput" maxlength="16" placeholder="Your name to join the board" />
         <button class="btn btn-primary sm" id="submitScore">Submit score</button>
       </div>
-      <div id="lbList" style="margin-top:12px"></div>
+      <div class="tabs">
+        <button class="tab on" id="tabToday">Today</button>
+        <button class="tab" id="tabSeason">🏆 Overall</button>
+      </div>
+      <div id="lbList" style="margin-top:6px"></div>
     </div>
     <p class="muted" id="lbNote"></p>
   </section>
@@ -210,6 +227,17 @@
     <div class="brand"><div class="ball"></div><div><b>Past Match Days</b><span>Replay any quiz</span></div></div>
     <div id="archiveList"></div>
     <button class="btn btn-ghost" id="backHome" style="margin-top:14px">← Back</button>
+  </section>
+
+  <!-- STANDINGS (season-long) -->
+  <section id="standings" class="screen">
+    <div class="brand"><div class="ball"></div><div><b>Tournament Standings</b><span>Total points across all match days</span></div></div>
+    <div class="card center" id="champCard" style="margin-bottom:14px"></div>
+    <div class="card">
+      <div id="standingsList"></div>
+    </div>
+    <p class="muted" id="standingsNote"></p>
+    <button class="btn btn-ghost" id="backHome2" style="margin-top:14px">← Back</button>
   </section>
 
 </div>
@@ -225,7 +253,10 @@ const CONFIG = {
   // Fill these in to switch on a real global leaderboard (see README).
   SUPABASE_URL: "",          // e.g. "https://abcd.supabase.co"
   SUPABASE_ANON_KEY: "",     // your anon public key
-  QUIZ_SECONDS: 15           // time per question
+  QUIZ_SECONDS: 15,          // time per question
+  // ---- Tournament-long competition ----
+  TOURNAMENT_END: "2026-07-19",   // final day. Top of the OVERALL board after this = champion.
+  PRIZE: "🏆 Bragging rights as Tournament Champion"  // shown on the standings screen — change to a real prize if you have one
 };
 
 /* ============================================================
@@ -303,12 +334,21 @@ function renderHome(){
       `<div class="challenge-banner">🎯 <b>${esc(challengeFrom.n)}</b> challenged you — they scored
        <b>${challengeFrom.s}</b> pts on ${esc(QUIZ.matchday)}. Beat them!</div>`;
   }
+  // tournament countdown / champion teaser on home
+  const d=daysLeft();
+  if(tournamentOver()){
+    $('#homeFoot').textContent='Tournament complete · see who won ▶';
+  }else if(d!=null){
+    $('#homeFoot').textContent=`${d} day${d===1?'':'s'} of the World Cup left — every quiz adds to your total.`;
+  }
 }
 
 function wireHome(){
   $('#playBtn').onclick = startQuiz;
   $('#archiveLink').onclick = e=>{e.preventDefault();openArchive();};
   $('#backHome').onclick = ()=>show('home');
+  $('#standingsBtn').onclick = openStandings;
+  $('#backHome2').onclick = ()=>show('home');
 }
 
 /* ============================================================
@@ -411,6 +451,7 @@ function finish(){
 
   buildCard();
   wireResult();
+  setTab('today');
   renderLeaderboard();
   $('#lbNote').textContent = usingSupabase()
     ? 'Global leaderboard · resets each match day'
@@ -423,6 +464,12 @@ function wireResult(){
   $('#shareBtn').onclick=shareScore;
   $('#challengeBtn').onclick=makeChallenge;
   $('#submitScore').onclick=submitScore;
+  $('#tabToday').onclick=()=>{setTab('today');renderLeaderboard();};
+  $('#tabSeason').onclick=()=>{setTab('season');renderSeasonInto($('#lbList'));};
+}
+function setTab(which){
+  $('#tabToday').classList.toggle('on',which==='today');
+  $('#tabSeason').classList.toggle('on',which==='season');
 }
 
 function grade(c,t){
@@ -575,6 +622,92 @@ async function renderLeaderboard(){
       <div class="sc">${r.score}</div>
     </div>`).join('');
 }
+
+/* ============================================================
+   SEASON-LONG STANDINGS  (total points across all match days)
+   ============================================================ */
+async function collectAllScores(){
+  if(usingSupabase()){
+    try{
+      const r=await fetch(CONFIG.SUPABASE_URL+'/rest/v1/scores?select=name,score,quiz&limit=10000',
+        {headers:{'apikey':CONFIG.SUPABASE_ANON_KEY,'Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY}});
+      return await r.json();
+    }catch(e){return [];}
+  }
+  // on-device: gather every per-day board stored in localStorage
+  let all=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.indexOf('mdq_lb_')===0){
+      try{all=all.concat(JSON.parse(localStorage.getItem(k))||[]);}catch(e){}
+    }
+  }
+  return all;
+}
+function aggregateSeason(entries){
+  // take each player's BEST score per match day, then sum across days
+  const best={};
+  entries.forEach(e=>{
+    if(!e||!e.name||e.score==null)return;
+    const key=e.name+'|'+(e.quiz||'');
+    if(!(key in best)||e.score>best[key])best[key]=e.score;
+  });
+  const tot={};
+  Object.keys(best).forEach(key=>{
+    const name=key.split('|')[0];
+    tot[name]=tot[name]||{name,score:0,days:0};
+    tot[name].score+=best[key];tot[name].days++;
+  });
+  return Object.values(tot).sort((a,b)=>b.score-a.score);
+}
+async function seasonStandings(){return aggregateSeason(await collectAllScores());}
+
+async function renderSeasonInto(el){
+  el.innerHTML='<div class="spin"></div>';
+  const rows=(await seasonStandings()).slice(0,10);
+  const me=myName();
+  if(!rows.length){el.innerHTML='<p class="muted" style="margin:0">No totals yet — play a quiz to get on the board.</p>';return;}
+  el.innerHTML=rows.map((r,i)=>`
+    <div class="lbrow ${r.name===me?'me':''} ${i===0?'top':''}">
+      <div class="rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)}</div>
+      <div class="nm">${esc(r.name)}<div class="sub" style="margin:1px 0 0;font-size:11px">${r.days} match day${r.days===1?'':'s'}</div></div>
+      <div class="sc">${r.score.toLocaleString()}</div>
+    </div>`).join('');
+}
+
+async function openStandings(){
+  show('standings');
+  const list=$('#standingsList'),champ=$('#champCard');
+  champ.innerHTML='<div class="spin"></div>';
+  await renderSeasonInto(list);
+  const rows=await seasonStandings();
+  const leader=rows[0];
+  if(tournamentOver()){
+    champ.innerHTML = leader
+      ? `<div class="champ"><div class="crown">🏆</div><div class="lab">Tournament Champion</div>
+         <div class="who">${esc(leader.name)}</div>
+         <div class="scoresub">${leader.score.toLocaleString()} pts across ${leader.days} match days</div></div>`
+      : `<div class="champ"><div class="crown">🏆</div><div class="lab">Tournament complete</div>
+         <div class="who">No entries</div></div>`;
+  }else{
+    const d=daysLeft();
+    champ.innerHTML = `<div class="champ">
+        <div class="lab">Current leader</div>
+        <div class="who">${leader?esc(leader.name):'—'}</div>
+        <div class="scoresub">${leader?leader.score.toLocaleString()+' pts':'Be the first to score'}</div>
+        <div class="countdown">⏳ ${d} day${d===1?'':'s'} left — final on July 19</div>
+      </div>`;
+  }
+  $('#standingsNote').innerHTML = `<div class="prize">${esc(CONFIG.PRIZE)} — whoever tops this board when the tournament ends wins.</div>`;
+}
+
+/* ---- tournament timing ---- */
+function daysLeft(){
+  const end=new Date(CONFIG.TOURNAMENT_END+'T23:59:59');
+  const diff=Math.ceil((end-new Date())/86400000);
+  return diff<0?0:diff;
+}
+function tournamentOver(){return new Date()>new Date(CONFIG.TOURNAMENT_END+'T23:59:59');}
 
 /* ============================================================
    ARCHIVE

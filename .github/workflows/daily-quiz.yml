@@ -1,0 +1,40 @@
+name: Daily quiz
+
+# Builds a fresh Match Day Quiz every morning and commits it back to the repo.
+# With GitHub Pages enabled, that automatically redeploys your live site.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"     # 06:00 UTC daily (covers late North-American night games)
+  workflow_dispatch:          # adds a "Run workflow" button so you can trigger it by hand
+
+permissions:
+  contents: write             # lets the job push the new quiz back to the repo
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate yesterday's quiz
+        run: python3 generate_quiz.py
+
+      - name: Commit & push if anything changed
+        run: |
+          git config user.name  "quiz-bot"
+          git config user.email "quiz-bot@users.noreply.github.com"
+          git add quizzes
+          [ -d data ] && git add data || true
+          if git diff --cached --quiet; then
+            echo "No changes (rest day or no results yet) — nothing to commit."
+          else
+            git commit -m "auto: quiz for $(date -u +%F)"
+            git push
+          fi
