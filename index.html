@@ -270,9 +270,9 @@
    ============================================================ */
 const CONFIG = {
   // Leave both blank to use on-device (localStorage) leaderboard.
-  // Fill these in to switch on a real global leaderboard (see README).
-  SUPABASE_URL: "",          // e.g. "https://abcd.supabase.co"
-  SUPABASE_ANON_KEY: "",     // your anon public key
+  // Filled in = real shared global leaderboard. Publishable keys are safe to ship in the browser.
+  SUPABASE_URL: "https://heuilssnjwulonmnafpa.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_cjx_6DXyolEgd1UxhCh5xQ_Uz3Ya5ib",  // publishable key (sent in apikey header only)
   QUIZ_SECONDS: 15,          // time per question
   // ---- Tournament-long competition ----
   TOURNAMENT_END: "2026-07-19",   // final day. Top of the OVERALL board after this = champion.
@@ -642,8 +642,7 @@ async function submitScore(){
     try{
       await fetch(CONFIG.SUPABASE_URL+'/rest/v1/scores',{
         method:'POST',
-        headers:{'Content-Type':'application/json','apikey':CONFIG.SUPABASE_ANON_KEY,
-          'Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY,'Prefer':'return=minimal'},
+        headers:{'Content-Type':'application/json','apikey':CONFIG.SUPABASE_ANON_KEY,'Prefer':'return=minimal'},
         body:JSON.stringify(entry)
       });
     }catch(e){}
@@ -661,7 +660,7 @@ async function renderLeaderboard(){
   if(usingSupabase()){
     try{
       const r=await fetch(CONFIG.SUPABASE_URL+'/rest/v1/scores?quiz=eq.'+QUIZ.id+'&order=score.desc&limit=10',
-        {headers:{'apikey':CONFIG.SUPABASE_ANON_KEY,'Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY}});
+        {headers:{'apikey':CONFIG.SUPABASE_ANON_KEY}});
       rows=await r.json();
     }catch(e){rows=[];}
   }else{
@@ -687,7 +686,7 @@ async function collectAllScores(){
   if(usingSupabase()){
     try{
       const r=await fetch(CONFIG.SUPABASE_URL+'/rest/v1/scores?select=name,score,quiz&limit=10000',
-        {headers:{'apikey':CONFIG.SUPABASE_ANON_KEY,'Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY}});
+        {headers:{'apikey':CONFIG.SUPABASE_ANON_KEY}});
       return await r.json();
     }catch(e){return [];}
   }
