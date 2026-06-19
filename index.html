@@ -537,10 +537,13 @@ function buildCard(){
   // streak
   if(maxStreak>=3){x.fillStyle='#ffd23f';x.font='800 40px -apple-system,Arial';
     x.fillText('🔥 best streak: '+maxStreak,540,1040);}
-  // footer
-  x.fillStyle='rgba(255,255,255,.12)';x.fillRect(140,1150,800,3);
-  x.fillStyle='#8fb6a0';x.font='700 38px -apple-system,Arial';
-  x.fillText('Can you beat me? Play the daily quiz ▶',540,1240);
+  // footer — print the play URL on the image so it travels even when text is stripped
+  x.fillStyle='rgba(255,255,255,.12)';x.fillRect(140,1140,800,3);
+  x.fillStyle='#8fb6a0';x.font='600 36px -apple-system,Arial';
+  x.fillText('Can you beat me? Play the daily quiz at',540,1212);
+  const displayUrl=location.href.split('#')[0].split('?')[0].replace(/^https?:\/\//,'').replace(/\/$/,'');
+  x.fillStyle='#1fd873';x.font='800 40px -apple-system,Arial';
+  x.fillText(displayUrl,540,1268);
 
   c.toBlob(b=>{cardBlob=b;if(cardURL)URL.revokeObjectURL(cardURL);cardURL=URL.createObjectURL(b);
     $('#cardPreview').innerHTML='';const im=new Image();im.src=cardURL;$('#cardPreview').appendChild(im);
@@ -552,13 +555,14 @@ function wrap(x,txt,cx,cy,max,lh){
   x.fillText(line.trim(),cx,y);
 }
 async function shareScore(){
+  const url=location.href.split('#')[0].split('?')[0];
   const caption=`I scored ${correctCount}/${QUIZ.questions.length} (${score} pts) on ${QUIZ.matchday} of the Match Day Quiz. Can you beat me?`;
-  const url=location.href.split('#')[0];
-  // 1) try the OS share sheet WITH the image
+  const shareText=`${caption}\n▶ Play: ${url}`;   // link embedded in the text so it can't be stripped
+  // 1) try the OS share sheet WITH the image (link is in the text + printed on the card)
   try{
     if(cardBlob && navigator.canShare){
       const file=new File([cardBlob],'score.png',{type:'image/png'});
-      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:caption}); return; }
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:shareText}); return; }
     }
     if(navigator.share){ await navigator.share({title:'Match Day Quiz',text:caption,url}); return; }
   }catch(e){
@@ -566,7 +570,7 @@ async function shareScore(){
   }
   // 2) guaranteed-visible fallback panel
   openShareModal({imgURL:cardURL, caption, link:url,
-    hint:'Press and hold the image to save it, then post it. Or tap Copy for the caption + link.'});
+    hint:'Press and hold the image to save it, then post it. The link is in the caption — tap Copy to grab it.'});
 }
 async function makeChallenge(){
   const link=location.href.split('#')[0]+'#c='+b64EncodeUnicode(JSON.stringify(
