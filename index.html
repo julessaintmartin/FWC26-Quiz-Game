@@ -483,8 +483,8 @@ function finish(){
   safe(()=>buildCard());
   safe(()=>renderLeaderboard());
   safe(()=>{ $('#lbNote').textContent = usingSupabase()
-    ? 'Global leaderboard · resets each match day'
-    : 'Scores saved on this device. Turn on the global board in README.'; });
+    ? '🌐 Global leaderboard — shared across everyone who plays'
+    : '📱 On-device only — this copy has no database. Hard-refresh to get the latest version.'; });
   if(correctCount>=8) safe(()=>confetti());
 }
 
@@ -666,6 +666,7 @@ async function renderLeaderboard(){
   }else{
     rows=(store.get('lb_'+QUIZ.id,[])||[]).slice();
   }
+  if(!Array.isArray(rows)){ console.warn('leaderboard response not a list:',rows); rows=[]; }
   rows.sort((a,b)=>b.score-a.score);
   rows=rows.slice(0,10);
   const me=myName();
@@ -687,7 +688,8 @@ async function collectAllScores(){
     try{
       const r=await fetch(CONFIG.SUPABASE_URL+'/rest/v1/scores?select=name,score,quiz&limit=10000',
         {headers:{'apikey':CONFIG.SUPABASE_ANON_KEY}});
-      return await r.json();
+      const j=await r.json();
+      return Array.isArray(j) ? j : [];
     }catch(e){return [];}
   }
   // on-device: gather every per-day board stored in localStorage
