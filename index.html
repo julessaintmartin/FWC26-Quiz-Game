@@ -148,6 +148,15 @@
     animation:rot .8s linear infinite;margin:30px auto}
   @keyframes rot{to{transform:rotate(360deg)}}
   .center{text-align:center}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.66);display:none;align-items:center;justify-content:center;
+    z-index:60;padding:18px}
+  .modal.on{display:flex;animation:fade .2s ease both}
+  .modal .sheet{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);
+    border-radius:18px;padding:20px;max-width:360px;width:100%;position:relative;box-shadow:var(--shadow)}
+  .modal .x{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--mut);font-size:20px;
+    cursor:pointer;padding:6px;line-height:1}
+  .modal #modalImg img{width:100%;border-radius:12px;display:block;margin-bottom:14px}
+  .mcap{font-size:14px;color:var(--txt);line-height:1.45;margin:0 0 12px}
 </style>
 </head>
 <body>
@@ -240,6 +249,17 @@
     <button class="btn btn-ghost" id="backHome2" style="margin-top:14px">← Back</button>
   </section>
 
+</div>
+
+<div class="modal" id="shareModal">
+  <div class="sheet">
+    <button class="x" id="modalClose" aria-label="Close">✕</button>
+    <div id="modalImg"></div>
+    <p class="mcap" id="modalCaption"></p>
+    <input class="nm" id="modalLink" readonly style="display:none" />
+    <button class="btn btn-primary sm" id="modalCopy">Copy</button>
+    <p class="muted" id="modalHint" style="margin-top:12px"></p>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -523,27 +543,55 @@ function wrap(x,txt,cx,cy,max,lh){
   x.fillText(line.trim(),cx,y);
 }
 async function shareScore(){
-  const text=`I scored ${correctCount}/${QUIZ.questions.length} (${score} pts) on ${QUIZ.matchday} of the Match Day Quiz. Can you beat me?`;
+  const caption=`I scored ${correctCount}/${QUIZ.questions.length} (${score} pts) on ${QUIZ.matchday} of the Match Day Quiz. Can you beat me?`;
+  const url=location.href.split('#')[0];
+  // 1) try the OS share sheet WITH the image
   try{
-    if(cardBlob && navigator.canShare && navigator.canShare({files:[new File([cardBlob],'score.png',{type:'image/png'})]})){
-      await navigator.share({files:[new File([cardBlob],'score.png',{type:'image/png'})],text});
-      return;
+    if(cardBlob && navigator.canShare){
+      const file=new File([cardBlob],'score.png',{type:'image/png'});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:caption}); return; }
     }
-    if(navigator.share){await navigator.share({text,url:location.href.split('#')[0]});return;}
-    throw 0;
+    if(navigator.share){ await navigator.share({title:'Match Day Quiz',text:caption,url}); return; }
   }catch(e){
-    // fallback: download image + copy text
-    if(cardURL){const a=document.createElement('a');a.href=cardURL;a.download='matchday-score.png';a.click();}
-    try{await navigator.clipboard.writeText(text+' '+location.href.split('#')[0]);}catch(_){}
-    toast('Image saved · caption copied');
+    if(e && e.name==='AbortError') return;   // user closed the sheet themselves — that's fine
   }
+  // 2) guaranteed-visible fallback panel
+  openShareModal({imgURL:cardURL, caption, link:url,
+    hint:'Press and hold the image to save it, then post it. Or tap Copy for the caption + link.'});
 }
-function makeChallenge(){
-  const payload=btoa(JSON.stringify({q:QUIZ.id,n:(myName()||'A friend').slice(0,16),s:score}));
-  const link=location.href.split('#')[0]+'#c='+payload;
-  const text=`🎯 I scored ${score} on ${QUIZ.matchday}. Think you can beat me? ${link}`;
-  if(navigator.share){navigator.share({text}).catch(()=>{});}
-  else{navigator.clipboard.writeText(text).then(()=>toast('Challenge link copied!')).catch(()=>toast(link));}
+async function makeChallenge(){
+  const link=location.href.split('#')[0]+'#c='+b64EncodeUnicode(JSON.stringify(
+    {q:QUIZ.id, n:(myName()||'A friend').slice(0,16), s:score}));
+  const caption=`🎯 I scored ${score} on ${QUIZ.matchday} of the Match Day Quiz. Think you can beat me?`;
+  try{
+    if(navigator.share){ await navigator.share({title:'Match Day Quiz challenge',text:caption,url:link}); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  openShareModal({caption, link,
+    hint:'Send this link to a friend — they play the same quiz and find out if they beat your score.'});
+}
+
+/* ---- always-visible share/challenge panel (fallback when native share is blocked) ---- */
+function openShareModal({imgURL, caption, link, hint}){
+  const m=$('#shareModal');
+  $('#modalImg').innerHTML = imgURL ? `<img src="${imgURL}" alt="score card">` : '';
+  $('#modalCaption').textContent = caption || '';
+  const li=$('#modalLink');
+  if(link){ li.style.display='block'; li.value=link; } else { li.style.display='none'; }
+  $('#modalHint').textContent = hint || '';
+  const copyText = link ? `${caption} ${link}` : caption;
+  const btn=$('#modalCopy'); btn.textContent='Copy';
+  btn.onclick=async()=>{
+    let ok=false;
+    try{ await navigator.clipboard.writeText(copyText); ok=true; }catch(e){
+      try{ li.style.display='block'; li.focus(); li.select(); li.setSelectionRange(0,99999); ok=document.execCommand('copy'); }catch(_){}
+    }
+    btn.textContent = ok ? '✓ Copied!' : 'Select the link above & copy';
+    if(ok) setTimeout(()=>btn.textContent='Copy', 1800);
+  };
+  const close=()=>m.classList.remove('on');
+  $('#modalClose').onclick=close;
+  m.onclick=e=>{ if(e.target===m) close(); };
+  m.classList.add('on');
 }
 
 /* ============================================================
@@ -739,7 +787,14 @@ async function openArchive(){
 function parseChallenge(){
   const m=location.hash.match(/c=([^&]+)/);
   if(!m)return;
-  try{challengeFrom=JSON.parse(atob(decodeURIComponent(m[1])));}catch(e){challengeFrom=null;}
+  try{challengeFrom=JSON.parse(b64DecodeUnicode(m[1]));}
+  catch(e){ try{challengeFrom=JSON.parse(atob(m[1]));}catch(_){challengeFrom=null;} }
+}
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,(_,p)=>String.fromCharCode('0x'+p)));
+}
+function b64DecodeUnicode(str){
+  return decodeURIComponent(Array.prototype.map.call(atob(str),c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function confetti(){
