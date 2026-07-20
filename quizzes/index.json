@@ -1,6 +1,13 @@
 {
   "quizzes": [
     {
+      "id": "2026-07-19",
+      "date": "2026-07-19",
+      "matchday": "Jul 19",
+      "title": "Jul 19 Preview",
+      "file": "matchday-2026-07-19.json"
+    },
+    {
       "id": "2026-07-18",
       "date": "2026-07-18",
       "matchday": "Jul 18",
